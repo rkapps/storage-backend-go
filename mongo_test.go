@@ -51,7 +51,7 @@ func getClient() *MongoClient {
 func TestSetup(t *testing.T) {
 
 	client := getClient()
-	userRepo := GetRepository[*UserModel](*client)
+	userRepo := NewMongoRepository[*UserModel](*client)
 	err := userRepo.SetupCollection()
 	if err != nil {
 		t.Errorf("Expected no error: %v", err)
@@ -61,7 +61,7 @@ func TestSetup(t *testing.T) {
 func TestFindByID(t *testing.T) {
 
 	client := getClient()
-	userRepo := GetRepository[*UserModel](*client)
+	userRepo := NewMongoRepository[*UserModel](*client)
 	_, err := userRepo.FindByID(context.Background(), "123")
 	if err != nil {
 		t.Errorf("Expected no document: %v", err)
@@ -74,7 +74,7 @@ func TestFindByID(t *testing.T) {
 func TestFind(t *testing.T) {
 
 	client := getClient()
-	userRepo := GetRepository[*UserModel](*client)
+	userRepo := NewMongoRepository[*UserModel](*client)
 
 	// The filter uses the $in operator to match any of the provided IDs
 	// filter := bson.M{
@@ -92,7 +92,7 @@ func TestFind(t *testing.T) {
 func TestInsertOne(t *testing.T) {
 
 	client := getClient()
-	userRepo := GetRepository[*UserModel](*client)
+	userRepo := NewMongoRepository[*UserModel](*client)
 
 	user := &UserModel{}
 	user.ID = "12345"
@@ -103,7 +103,7 @@ func TestInsertOne(t *testing.T) {
 func TestUpdateOne(t *testing.T) {
 
 	client := getClient()
-	userRepo := GetRepository[*UserModel](*client)
+	userRepo := NewMongoRepository[*UserModel](*client)
 
 	user := &UserModel{}
 	user.ID = "123"

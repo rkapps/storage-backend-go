@@ -19,8 +19,8 @@ func NewMongoClient(connstr string, dbname string) (*MongoClient, error) {
 	return &MongoClient{client, ctx, db}, nil
 }
 
-// GetRepository for the RepoModel
-func GetRepository[T RepoModel](client MongoClient) RepositoryInterface[T] {
+// NewMongoRepository for the RepoModel
+func NewMongoRepository[T RepoModel](client MongoClient) RepositoryInterface[T] {
 	var model T
 	collName := model.CollectionName()
 	return &RepoCollection[T]{
