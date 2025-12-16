@@ -1,4 +1,4 @@
-module github/com/rkapps/storage-backend-go
+module github.com/rkapps/storage-backend-go
 
 go 1.21.6
 
