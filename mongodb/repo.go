@@ -122,18 +122,6 @@ func (repo *RepoCollection[T]) InsertMany(ctx context.Context, items []T) error 
 // Search searches the collection using the searchindex
 func (repo *RepoCollection[T]) Search(ctx context.Context, criteria SearchCriteria) ([]T, error) {
 	var results []T
-	// compound := bson.D{
-	// 	{"$search", bson.D{
-	// 		{"compound", bson.D{
-	// 			{"should", bson.A{ // Nested inside compound
-	// 				bson.D{{"autocomplete", bson.D{
-	// 					{"query", "AA"},
-	// 					{"path", "symbol"},
-	// 				}}},
-	// 			}},
-	// 		}},
-	// 	}},
-	// }
 	compound := bson.D{}
 
 	if len(criteria.Query) > 0 {
@@ -150,6 +138,7 @@ func (repo *RepoCollection[T]) Search(ctx context.Context, criteria SearchCriter
 		compound = append(compound, bson.E{Key: "minimumShouldMatch", Value: 1})
 	}
 
+	//Add token fields for text fields and range fields for numerics
 	if len(criteria.TokenFields) > 0 || len(criteria.RangeFields) > 0 {
 
 		filterCause := bson.A{}
@@ -175,14 +164,25 @@ func (repo *RepoCollection[T]) Search(ctx context.Context, criteria SearchCriter
 			}
 		}
 		compound = append(compound, bson.E{Key: "filter", Value: filterCause})
+	}
 
+	searchValue := bson.D{}
+	searchValue = append(searchValue, bson.E{Key: "compound", Value: compound})
+
+	//Add sortFields
+	if len(criteria.SortFields) > 0 {
+		sortValue := bson.D{}
+		for _, field := range criteria.SortFields {
+			sortValue = append(sortValue, bson.E{Key: field.Name, Value: field.Value})
+		}
+		sortStage := bson.E{Key: "sort", Value: sortValue}
+		searchValue = append(searchValue, sortStage)
 	}
+
+	//Final searchStage
 	searchStage := bson.D{
-		{Key: "$search", Value: bson.D{
-			{Key: "compound", Value: compound},
-		}},
+		{Key: "$search", Value: searchValue},
 	}
-	log.Println(searchStage)
 
 	pipeline := mongo.Pipeline{searchStage}
 	cursor, err := repo.coll.Aggregate(ctx, pipeline)
@@ -192,7 +192,6 @@ func (repo *RepoCollection[T]) Search(ctx context.Context, criteria SearchCriter
 	if err = cursor.All(ctx, &results); err != nil {
 		return results, err
 	}
-	// log.Println(results)
 	return results, nil
 }
 

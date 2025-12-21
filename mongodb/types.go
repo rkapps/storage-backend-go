@@ -42,20 +42,30 @@ type RepositoryInterface[T RepoModel] interface {
 	UpdateMany(ctx context.Context, ids []string, set bson.M) error
 }
 
+// SearchCriteria holds fields used in AtlasSearch
 type SearchCriteria struct {
 	Query              string
 	AutoCompleteFields []string
 	TokenFields        []SearchCriteriaTokenFields
 	RangeFields        []SearchCriteriaRangeFields
+	SortFields         []SearchCriteriaSortFields
 }
 
+// SearchCriteriaTokenFields has fields to use with "$in"
 type SearchCriteriaTokenFields struct {
 	Name   string
 	Values []string
 }
 
+// SearchCriteriaRangeFields has fields to use with gt, gte, lt and lte
 type SearchCriteriaRangeFields struct {
 	Name  string
 	Key   string
 	Value float64
+}
+
+// SearchCriteriaSortFields has fields to use with sort name : -1 or name : -1
+type SearchCriteriaSortFields struct {
+	Name  string
+	Value int
 }
