@@ -2,6 +2,7 @@ package mongodb
 
 import (
 	"context"
+	"time"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -30,6 +31,7 @@ type RepositoryInterface[T RepoModel] interface {
 	BulkWrite(ctx context.Context, ids []string, items []T) error
 	CreateIndexes(ctx context.Context, indexModels []mongo.IndexModel) error
 	CreateSearchIndexes(ctx context.Context, searchIndexModels []mongo.SearchIndexModel) error
+	CreateTimeSeriesCollection(ctx context.Context, timeField string, metaField string, dur time.Duration) error
 	Count(ctx context.Context) int64
 	DeleteByID(ctx context.Context, id string) error
 	DeleteMany(ctx context.Context, ids []string) error
@@ -44,6 +46,7 @@ type RepositoryInterface[T RepoModel] interface {
 
 // SearchCriteria holds fields used in AtlasSearch
 type SearchCriteria struct {
+	IndexName          string
 	Query              string
 	AutoCompleteFields []string
 	TokenFields        []SearchCriteriaTokenFields

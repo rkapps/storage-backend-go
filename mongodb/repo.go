@@ -3,6 +3,7 @@ package mongodb
 import (
 	"context"
 	"log"
+	"time"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -52,6 +53,21 @@ func (repo *RepoCollection[T]) CreateIndexes(ctx context.Context, models []mongo
 func (repo *RepoCollection[T]) CreateSearchIndexes(ctx context.Context, models []mongo.SearchIndexModel) error {
 	_, err := repo.coll.SearchIndexes().CreateMany(ctx, models, nil)
 	return err
+}
+
+// CreateTimeSeriesCollection create a time series collection and secondary indexes
+func (repo *RepoCollection[T]) CreateTimeSeriesCollection(ctx context.Context, timeField string, metaField string, dur time.Duration) error {
+
+	//Create the collection
+	tsOpts := options.TimeSeries()
+	tsOpts.SetTimeField(timeField)
+	tsOpts.SetMetaField(metaField)
+
+	tsOpts.SetBucketMaxSpan(dur)
+	tsOpts.SetBucketRounding(dur)
+
+	cOpts := options.CreateCollection().SetTimeSeriesOptions(tsOpts)
+	return repo.coll.Database().CreateCollection(ctx, repo.coll.Name(), cOpts)
 }
 
 // DeleteByID finds record from the collection using the id
@@ -167,6 +183,7 @@ func (repo *RepoCollection[T]) Search(ctx context.Context, criteria SearchCriter
 	}
 
 	searchValue := bson.D{}
+	searchValue = append(searchValue, bson.E{Key: "index", Value: criteria.IndexName})
 	searchValue = append(searchValue, bson.E{Key: "compound", Value: compound})
 
 	//Add sortFields
