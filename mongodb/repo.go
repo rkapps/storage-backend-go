@@ -3,6 +3,7 @@ package mongodb
 import (
 	"context"
 	"log"
+	"log/slog"
 	"time"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -196,12 +197,19 @@ func (repo *RepoCollection[T]) Search(ctx context.Context, criteria SearchCriter
 		searchValue = append(searchValue, sortStage)
 	}
 
+	limitStage := bson.D{}
+	if criteria.Limit > 0 {
+		limitStage = append(limitStage, bson.E{Key: "$limit", Value: criteria.Limit})
+	}
+
 	//Final searchStage
 	searchStage := bson.D{
 		{Key: "$search", Value: searchValue},
 	}
 
-	pipeline := mongo.Pipeline{searchStage}
+	slog.Debug("Search", "searchStage", searchStage.String())
+
+	pipeline := mongo.Pipeline{searchStage, limitStage}
 	cursor, err := repo.coll.Aggregate(ctx, pipeline)
 	if err != nil {
 		return results, err

@@ -48,27 +48,28 @@ type RepositoryInterface[T RepoModel] interface {
 type SearchCriteria struct {
 	IndexName          string
 	Query              string
+	Limit              int
 	AutoCompleteFields []string
-	TokenFields        []SearchCriteriaTokenFields
-	RangeFields        []SearchCriteriaRangeFields
-	SortFields         []SearchCriteriaSortFields
+	TokenFields        []SearchCriteriaTokenField
+	RangeFields        []SearchCriteriaRangeField
+	SortFields         []SearchCriteriaSortField
 }
 
-// SearchCriteriaTokenFields has fields to use with "$in"
-type SearchCriteriaTokenFields struct {
+// SearchCriteriaTokenField has fields to use with "$in"
+type SearchCriteriaTokenField struct {
 	Name   string
 	Values []string
 }
 
-// SearchCriteriaRangeFields has fields to use with gt, gte, lt and lte
-type SearchCriteriaRangeFields struct {
+// SearchCriteriaRangeField has fields to use with gt, gte, lt and lte
+type SearchCriteriaRangeField struct {
 	Name  string
 	Key   string
 	Value float64
 }
 
-// SearchCriteriaSortFields has fields to use with sort name : -1 or name : -1
-type SearchCriteriaSortFields struct {
+// SearchCriteriaSortField has fields to use with sort name : -1 or name : -1
+type SearchCriteriaSortField struct {
 	Name  string
 	Value int
 }
