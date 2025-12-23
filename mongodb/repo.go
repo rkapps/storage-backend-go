@@ -103,7 +103,7 @@ func (repo *RepoCollection[T]) FindByID(ctx context.Context, id string) (T, erro
 }
 
 // Find finds record from the collection by filter
-func (repo *RepoCollection[T]) Find(ctx context.Context, filter bson.M, sort bson.D, limit int64, skip int64) ([]T, error) {
+func (repo *RepoCollection[T]) Find(ctx context.Context, filter any, sort bson.D, limit int64, skip int64) ([]T, error) {
 
 	var models []T
 	if sort == nil {

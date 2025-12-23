@@ -91,4 +91,14 @@ func TestUserCollection(t *testing.T) {
 		}
 	})
 
+	t.Run("find", func(t *testing.T) {
+
+		users, _ := userRepo.Find(ctx, bson.D{}, nil, 0, 0)
+		if len(users) == 0 {
+			t.Error("Expecting users")
+		} else {
+			log.Printf("Users: %v", len(users))
+		}
+
+	})
 }

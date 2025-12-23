@@ -36,7 +36,7 @@ type RepositoryInterface[T RepoModel] interface {
 	DeleteByID(ctx context.Context, id string) error
 	DeleteMany(ctx context.Context, ids []string) error
 	FindByID(ctx context.Context, id string) (T, error)
-	Find(ctx context.Context, filter bson.M, sort bson.D, limit int64, skip int64) ([]T, error)
+	Find(ctx context.Context, filter any, sort bson.D, limit int64, skip int64) ([]T, error)
 	InsertOne(ctx context.Context, item T) error
 	InsertMany(ctx context.Context, items []T) error
 	Search(ctx context.Context, criteria SearchCriteria) ([]T, error)
