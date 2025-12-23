@@ -61,3 +61,30 @@ func NewMongoRepository[T RepoModel](client MongoClient) RepositoryInterface[T] 
 	}
 
 }
+
+// CreateSearchTokenField returns the token field
+func CreateSearchTokenField(name string, values []string) SearchCriteriaTokenField {
+
+	tokenField := SearchCriteriaTokenField{}
+	tokenField.Name = name
+	tokenField.Values = values
+	return tokenField
+}
+
+// CreateSearchRangeField returns the range field
+func CreateSearchRangeField(name string, key string, value float64) SearchCriteriaRangeField {
+
+	rangeField := SearchCriteriaRangeField{}
+	rangeField.Name = name
+	rangeField.Key = key
+	rangeField.Value = value
+	return rangeField
+}
+
+// CreateSortField returns the sort field
+func CreateSortField(name string, value int) SearchCriteriaSortField {
+	sortField := SearchCriteriaSortField{}
+	sortField.Name = name
+	sortField.Value = value
+	return sortField
+}
