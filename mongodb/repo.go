@@ -157,7 +157,7 @@ func (repo *RepoCollection[T]) Search(ctx context.Context, criteria SearchCriter
 	}
 
 	//Add token fields for text fields and range fields for numerics
-	if len(criteria.TokenFields) > 0 || len(criteria.RangeFields) > 0 {
+	if len(criteria.TokenFields) > 0 || len(criteria.RangeFields) > 0 || len(criteria.BooleanFields) > 0 {
 
 		filterCause := bson.A{}
 		if len(criteria.TokenFields) > 0 {
@@ -181,6 +181,18 @@ func (repo *RepoCollection[T]) Search(ctx context.Context, criteria SearchCriter
 
 			}
 		}
+		if len(criteria.BooleanFields) > 0 {
+			for _, booleanField := range criteria.BooleanFields {
+				filterCause = append(filterCause, bson.D{
+					{Key: "equals", Value: bson.D{
+						{Key: "path", Value: booleanField},
+						{Key: "value", Value: true},
+					}},
+				})
+
+			}
+		}
+
 		compound = append(compound, bson.E{Key: "filter", Value: filterCause})
 	}
 

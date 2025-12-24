@@ -49,6 +49,7 @@ type SearchCriteria struct {
 	IndexName          string
 	Query              string
 	Limit              int
+	BooleanFields      []string
 	AutoCompleteFields []string
 	TokenFields        []SearchCriteriaTokenField
 	RangeFields        []SearchCriteriaRangeField
