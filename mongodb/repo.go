@@ -13,12 +13,15 @@ import (
 )
 
 // Aggregate returns aggregated documents based on pipeline
-func (repo *RepoCollection[T]) Aggregate(ctx context.Context, pipeline interface{}) ([]map[string]interface{}, error) {
+func (repo *RepoCollection[T]) Aggregate(ctx context.Context, pipeline interface{}, results any) error {
 
 	cursor, err := repo.coll.Aggregate(ctx, pipeline)
-	var results []map[string]interface{}
-	err = cursor.All(context.TODO(), &results)
-	return results, err
+	if err != nil {
+		return err
+	}
+	defer cursor.Close(ctx)
+	err = cursor.All(context.TODO(), results)
+	return err
 }
 
 // BulkWrite writes multiple documents

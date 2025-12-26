@@ -28,7 +28,7 @@ type RepoCollection[T RepoModel] struct {
 
 // RepositoryInterface
 type RepositoryInterface[T RepoModel] interface {
-	Aggregate(ctx context.Context, pipeline interface{}) ([]map[string]interface{}, error)
+	Aggregate(ctx context.Context, pipeline interface{}, results any) error
 	BulkWrite(ctx context.Context, ids []string, items []T) error
 	CreateIndexes(ctx context.Context, indexModels []mongo.IndexModel) error
 	CreateSearchIndexes(ctx context.Context, searchIndexModels []mongo.SearchIndexModel) error
