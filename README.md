@@ -49,7 +49,6 @@ Create the Model and implement the interfaces Id(), SetId() and CollectionName()
         return "user"
     }
 
-
 ### Migrations
 
 In your migrations folder, create files with incremental version names and add the code in the init(). To use migrations you have to add the migrations schema first.
