@@ -1,7 +1,6 @@
 package migrations
 
 import (
-	"strconv"
 	"time"
 
 	"github.com/rkapps/storage-backend-go/mongodb"
@@ -16,14 +15,10 @@ type Migration struct {
 	Timestamp   *time.Time
 }
 
-type MigrateFunc func(client *mongodb.MongoClient) error
+type MigrateFunc func(client *mongodb.MongoDatabase) error
 
 func (m *Migration) Id() string {
-	return strconv.Itoa(m.Version)
-}
-
-func (m *Migration) SetId() {
-	m.ID = strconv.Itoa(m.Version)
+	return m.ID
 }
 
 func (m *Migration) CollectionName() string {

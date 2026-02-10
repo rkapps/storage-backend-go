@@ -7,13 +7,24 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/rkapps/storage-backend-go/core"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
+// Use a standalone function
+func GetMongoRepository[K comparable, M core.RepoModel[K]](db *MongoDatabase) core.Repository[K, M] {
+	var model M
+	collName := model.CollectionName()
+
+	return &MongoRepository[K, M]{
+		coll: db.collection(collName),
+	}
+}
+
 // Aggregate returns aggregated documents based on pipeline
-func (repo *RepoCollection[T]) Aggregate(ctx context.Context, pipeline interface{}, results any) error {
+func (repo *MongoRepository[K, M]) Aggregate(ctx context.Context, pipeline interface{}, results any) error {
 
 	cursor, err := repo.coll.Aggregate(ctx, pipeline)
 	if err != nil {
@@ -25,7 +36,7 @@ func (repo *RepoCollection[T]) Aggregate(ctx context.Context, pipeline interface
 }
 
 // BulkWrite writes multiple documents
-func (repo *RepoCollection[T]) BulkWrite(ctx context.Context, ids []string, items []T) error {
+func (repo *MongoRepository[K, M]) BulkWrite(ctx context.Context, ids []K, items []M) error {
 
 	var operations []mongo.WriteModel
 	for _, item := range items {
@@ -43,25 +54,25 @@ func (repo *RepoCollection[T]) BulkWrite(ctx context.Context, ids []string, item
 }
 
 // Count returns numbers of records in the collection
-func (repo *RepoCollection[T]) Count(ctx context.Context) int64 {
+func (repo *MongoRepository[K, M]) Count(ctx context.Context) int64 {
 	count, _ := repo.coll.CountDocuments(ctx, bson.D{}, nil)
 	return count
 }
 
 // CreateIndexes creates the index for the collection.
-func (repo *RepoCollection[T]) CreateIndexes(ctx context.Context, models []mongo.IndexModel) error {
+func (repo *MongoRepository[K, M]) CreateIndexes(ctx context.Context, models []mongo.IndexModel) error {
 	_, err := repo.coll.Indexes().CreateMany(ctx, models)
 	return err
 }
 
 // CreateSearchIndexes creates the index for the collection.
-func (repo *RepoCollection[T]) CreateSearchIndexes(ctx context.Context, models []mongo.SearchIndexModel) error {
+func (repo *MongoRepository[K, M]) CreateSearchIndexes(ctx context.Context, models []mongo.SearchIndexModel) error {
 	_, err := repo.coll.SearchIndexes().CreateMany(ctx, models, nil)
 	return err
 }
 
 // CreateTimeSeriesCollection create a time series collection and secondary indexes
-func (repo *RepoCollection[T]) CreateTimeSeriesCollection(ctx context.Context, timeField string, metaField string, dur time.Duration) error {
+func (repo *MongoRepository[K, M]) CreateTimeSeriesCollection(ctx context.Context, timeField string, metaField string, dur time.Duration) error {
 
 	//Create the collection
 	tsOpts := options.TimeSeries()
@@ -76,14 +87,14 @@ func (repo *RepoCollection[T]) CreateTimeSeriesCollection(ctx context.Context, t
 }
 
 // DeleteByID finds record from the collection using the id
-func (repo *RepoCollection[T]) DeleteByID(ctx context.Context, id string) error {
+func (repo *MongoRepository[K, M]) DeleteByID(ctx context.Context, id K) error {
 	filter := bson.M{"id": id}
 	_, err := repo.coll.DeleteOne(ctx, filter)
 	return err
 }
 
 // DeleteMany delete multiple records in the collection
-func (repo *RepoCollection[T]) DeleteMany(ctx context.Context, ids []string) error {
+func (repo *MongoRepository[K, M]) DeleteMany(ctx context.Context, ids []K) error {
 	var filter = bson.M{}
 	if len(ids) > 0 {
 		filter = bson.M{
@@ -95,11 +106,11 @@ func (repo *RepoCollection[T]) DeleteMany(ctx context.Context, ids []string) err
 }
 
 // FindByID finds record from the collection using the id
-func (repo *RepoCollection[T]) FindByID(ctx context.Context, id string) (T, error) {
+func (repo *MongoRepository[K, M]) FindByID(ctx context.Context, id K) (M, error) {
 	filter := bson.M{"id": id}
 	result := repo.coll.FindOne(ctx, filter)
 
-	var model T
+	var model M
 	if err := result.Decode(&model); err != nil {
 		return model, err
 	}
@@ -107,9 +118,9 @@ func (repo *RepoCollection[T]) FindByID(ctx context.Context, id string) (T, erro
 }
 
 // Find finds record from the collection by filter
-func (repo *RepoCollection[T]) Find(ctx context.Context, filter any, sort bson.D, limit int64, skip int64) ([]T, error) {
+func (repo *MongoRepository[K, M]) Find(ctx context.Context, filter any, sort bson.D, limit int64, skip int64) ([]M, error) {
 
-	var models []T
+	var models []M
 	if sort == nil {
 		sort = bson.D{}
 	}
@@ -126,7 +137,7 @@ func (repo *RepoCollection[T]) Find(ctx context.Context, filter any, sort bson.D
 }
 
 // InsertOne inserts a single record into the collection
-func (repo *RepoCollection[T]) InsertOne(ctx context.Context, item T) error {
+func (repo *MongoRepository[K, M]) InsertOne(ctx context.Context, item M) error {
 	log.Println(item)
 	_, err := repo.coll.InsertOne(ctx, item, nil)
 
@@ -134,15 +145,15 @@ func (repo *RepoCollection[T]) InsertOne(ctx context.Context, item T) error {
 }
 
 // InsertMany inserts multiple records in the collection
-func (repo *RepoCollection[T]) InsertMany(ctx context.Context, items []T) error {
+func (repo *MongoRepository[K, M]) InsertMany(ctx context.Context, items []M) error {
 	_, err := repo.coll.InsertMany(ctx, items, nil)
 
 	return err
 }
 
 // Search searches the collection using the searchindex
-func (repo *RepoCollection[T]) Search(ctx context.Context, criteria SearchCriteria) ([]T, error) {
-	var results []T
+func (repo *MongoRepository[K, M]) Search(ctx context.Context, criteria core.SearchCriteria) ([]M, error) {
+	var results []M
 	compound := bson.D{}
 
 	if len(criteria.Query) > 0 {
@@ -240,14 +251,14 @@ func (repo *RepoCollection[T]) Search(ctx context.Context, criteria SearchCriter
 }
 
 // UpdateOne update a single record into the collection based on the id.
-func (repo *RepoCollection[T]) UpdateOne(ctx context.Context, item T) error {
+func (repo *MongoRepository[K, M]) UpdateOne(ctx context.Context, item M) error {
 	update := bson.M{"$set": item}
 	_, err := repo.coll.UpdateByID(ctx, item.Id(), update, nil)
 	return err
 }
 
 // UpdateMany updates multiple records into the collection based on ids in the update
-func (repo *RepoCollection[T]) UpdateMany(ctx context.Context, ids []string, set bson.M) error {
+func (repo *MongoRepository[K, M]) UpdateMany(ctx context.Context, ids []K, set bson.M) error {
 
 	// The filter uses the $in operator to match any of the provided IDs
 	filter := bson.M{

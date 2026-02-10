@@ -28,19 +28,19 @@ func (u *UserModel) CollectionName() string {
 	return "user"
 }
 
-func getClient() *MongoClient {
+func getMongoDatabase() *MongoDatabase {
 
-	client, err := NewMongoClient(os.Getenv("MONGO_ATLAS_CONN_STR"), "test")
+	database, err := NewMongoDatabase(os.Getenv("MONGO_ATLAS_CONN_STR"), "test")
 	if err != nil {
 		log.Fatalf("error connecting to client")
 	}
-	return client
+	return database
 }
 
 func TestUserCollection(t *testing.T) {
 
-	client := getClient()
-	userRepo := NewMongoRepository[*UserModel](*client)
+	database := getMongoDatabase()
+	userRepo := GetMongoRepository[string, *UserModel](database)
 	ctx := context.Background()
 
 	t.Run("clean", func(t *testing.T) {

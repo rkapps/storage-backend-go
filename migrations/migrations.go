@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"sort"
+	"strconv"
 	"time"
 
 	mongodb "github.com/rkapps/storage-backend-go/mongodb"
@@ -21,7 +22,7 @@ func Register(version int, description string, up MigrateFunc, down MigrateFunc)
 	}
 	timestamp := time.Now()
 	migration := &Migration{Version: version, Description: description, Up: up, Down: down, Timestamp: &timestamp}
-	migration.SetId()
+	migration.ID = strconv.Itoa(migration.Version)
 
 	if migrationsm == nil {
 		migrationsm = make(map[int]*Migration)
@@ -30,10 +31,10 @@ func Register(version int, description string, up MigrateFunc, down MigrateFunc)
 }
 
 // RunMigrations runs all migrations
-func RunMigrations(client *mongodb.MongoClient) error {
+func RunMigrations(database *mongodb.MongoDatabase) error {
 
 	migrations := getMigrations()
-	model := mongodb.NewMongoRepository[*Migration](*client)
+	model := mongodb.GetMongoRepository[string, *Migration](database)
 	cmigrations, err := model.Find(context.Background(), bson.M{}, bson.D{{Key: "version", Value: -1}}, 0, 0)
 	if err != nil {
 		return err
@@ -50,15 +51,10 @@ func RunMigrations(client *mongodb.MongoClient) error {
 		if migration.Version <= cversion {
 			continue
 		}
-		err := migration.Up(client)
+		err := migration.Up(database)
 		if err != nil {
 			return fmt.Errorf("Error running migration %d:%s - %v", migration.Version, migration.Description, err)
 		}
-		// mmodel := &Migration{}
-		// mmodel.Version = migration.Version
-		// mmodel.SetId()
-		// mmodel.Description = migration.Description
-		// mmodel.Timestamp = migration.Timestamp
 		err = model.InsertOne(context.Background(), migration)
 		if err != nil {
 			return fmt.Errorf("Error inserting migration record: %v", err)

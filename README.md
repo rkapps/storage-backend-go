@@ -41,10 +41,6 @@ Create the Model and implement the interfaces Id(), SetId() and CollectionName()
         return u.ID
     }
 
-    func (u *UserModel) SetId() {
-        u.ID = u.UserId
-    }
-
     func (u *UserModel) CollectionName() string {
         return "user"
     }
