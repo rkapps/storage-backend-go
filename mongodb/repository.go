@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
-	"time"
 
 	"github.com/rkapps/storage-backend-go/core"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -72,15 +71,16 @@ func (repo *MongoRepository[K, M]) CreateSearchIndexes(ctx context.Context, mode
 }
 
 // CreateTimeSeriesCollection create a time series collection and secondary indexes
-func (repo *MongoRepository[K, M]) CreateTimeSeriesCollection(ctx context.Context, timeField string, metaField string, dur time.Duration) error {
+func (repo *MongoRepository[K, M]) CreateTimeSeriesCollection(ctx context.Context, timeField string, metaField string, granularity string) error {
 
 	//Create the collection
 	tsOpts := options.TimeSeries()
 	tsOpts.SetTimeField(timeField)
 	tsOpts.SetMetaField(metaField)
+	tsOpts.SetGranularity(granularity)
 
-	tsOpts.SetBucketMaxSpan(dur)
-	tsOpts.SetBucketRounding(dur)
+	// tsOpts.SetBucketMaxSpan(dur)
+	// tsOpts.SetBucketRounding(dur)
 
 	cOpts := options.CreateCollection().SetTimeSeriesOptions(tsOpts)
 	return repo.coll.Database().CreateCollection(ctx, repo.coll.Name(), cOpts)

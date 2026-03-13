@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"time"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -20,7 +19,7 @@ type Repository[K any, M RepoModel[K]] interface {
 	BulkWrite(ctx context.Context, ids []K, items []M) error
 	CreateIndexes(ctx context.Context, indexModels []mongo.IndexModel) error
 	CreateSearchIndexes(ctx context.Context, searchIndexModels []mongo.SearchIndexModel) error
-	CreateTimeSeriesCollection(ctx context.Context, timeField string, metaField string, dur time.Duration) error
+	CreateTimeSeriesCollection(ctx context.Context, timeField string, metaField string, granularity string) error
 	Count(ctx context.Context) int64
 	DeleteByID(ctx context.Context, id K) error
 	DeleteMany(ctx context.Context, ids []K) error
