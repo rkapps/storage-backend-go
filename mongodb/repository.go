@@ -253,7 +253,10 @@ func (repo *MongoRepository[K, M]) Search(ctx context.Context, criteria core.Sea
 // UpdateOne update a single record into the collection based on the id.
 func (repo *MongoRepository[K, M]) UpdateOne(ctx context.Context, item M) error {
 	update := bson.M{"$set": item}
-	_, err := repo.coll.UpdateByID(ctx, item.Id(), update, nil)
+	result, err := repo.coll.UpdateByID(ctx, item.Id(), update, nil)
+	if result.MatchedCount == 0 {
+		return fmt.Errorf("Could not find record with id: %v", item.Id())
+	}
 	return err
 }
 
