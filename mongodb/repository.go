@@ -156,6 +156,8 @@ func (repo *MongoRepository[K, M]) Search(ctx context.Context, criteria core.Sea
 	var results []M
 	compound := bson.D{}
 
+	// slog.Debug("Search", "Criteria", criteria)
+
 	if len(criteria.Query) > 0 {
 		shouldClauses := bson.A{}
 		for _, field := range criteria.AutoCompleteFields {
@@ -163,6 +165,12 @@ func (repo *MongoRepository[K, M]) Search(ctx context.Context, criteria core.Sea
 				{Key: "autocomplete", Value: bson.D{
 					{Key: "query", Value: criteria.Query},
 					{Key: "path", Value: field},
+					{Key: "fuzzy", Value: bson.D{
+						{Key: "maxEdits", Value: 1},
+						{Key: "prefixLength", Value: 2},
+						// optional:
+						// {Key: "maxExpansions", Value: 256},
+					}},
 				}},
 			})
 		}
@@ -171,40 +179,53 @@ func (repo *MongoRepository[K, M]) Search(ctx context.Context, criteria core.Sea
 	}
 
 	//Add token fields for text fields and range fields for numerics
-	if len(criteria.TokenFields) > 0 || len(criteria.RangeFields) > 0 || len(criteria.BooleanFields) > 0 {
+	if len(criteria.ExactFields) > 0 || len(criteria.TokenFields) > 0 || len(criteria.RangeFields) > 0 || len(criteria.DateRangeFields) > 0 || len(criteria.BooleanFields) > 0 {
 
 		filterCause := bson.A{}
-		if len(criteria.TokenFields) > 0 {
-			for _, tokenField := range criteria.TokenFields {
-				filterCause = append(filterCause, bson.D{
-					{Key: "in", Value: bson.D{
-						{Key: "path", Value: tokenField.Name},
-						{Key: "value", Value: tokenField.Values},
-					}},
-				})
-			}
+		for _, tokenField := range criteria.TokenFields {
+			filterCause = append(filterCause, bson.D{
+				{Key: "in", Value: bson.D{
+					{Key: "path", Value: tokenField.Name},
+					{Key: "value", Value: tokenField.Values},
+				}},
+			})
 		}
-		if len(criteria.RangeFields) > 0 {
-			for _, rangeField := range criteria.RangeFields {
-				filterCause = append(filterCause, bson.D{
-					{Key: "range", Value: bson.D{
-						{Key: "path", Value: rangeField.Name},
-						{Key: rangeField.Key, Value: rangeField.Value},
-					}},
-				})
+		for _, rangeField := range criteria.RangeFields {
+			filterCause = append(filterCause, bson.D{
+				{Key: "range", Value: bson.D{
+					{Key: "path", Value: rangeField.Name},
+					{Key: rangeField.Key, Value: rangeField.Value},
+				}},
+			})
 
-			}
 		}
-		if len(criteria.BooleanFields) > 0 {
-			for _, booleanField := range criteria.BooleanFields {
-				filterCause = append(filterCause, bson.D{
-					{Key: "equals", Value: bson.D{
-						{Key: "path", Value: booleanField},
-						{Key: "value", Value: true},
-					}},
-				})
 
-			}
+		for _, r := range criteria.DateRangeFields {
+			filterCause = append(filterCause, bson.D{
+				{Key: "range", Value: bson.D{
+					{Key: "path", Value: r.Name},
+					{Key: r.Key, Value: r.Value},
+				}},
+			})
+		}
+
+		for _, booleanField := range criteria.BooleanFields {
+			filterCause = append(filterCause, bson.D{
+				{Key: "equals", Value: bson.D{
+					{Key: "path", Value: booleanField},
+					{Key: "value", Value: true},
+				}},
+			})
+
+		}
+
+		for _, f := range criteria.ExactFields {
+			filterCause = append(filterCause, bson.D{
+				{Key: "equals", Value: bson.D{
+					{Key: "path", Value: f.Name},
+					{Key: "value", Value: f.Value},
+				}},
+			})
 		}
 
 		compound = append(compound, bson.E{Key: "filter", Value: filterCause})

@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"time"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -38,10 +39,17 @@ type SearchCriteria struct {
 	Query              string
 	Limit              int
 	BooleanFields      []string
+	ExactFields        []SearchCriteriaExactField
 	AutoCompleteFields []string
 	TokenFields        []SearchCriteriaTokenField
 	RangeFields        []SearchCriteriaRangeField
+	DateRangeFields    []SearchCriteriaDateRangeField // dates
 	SortFields         []SearchCriteriaSortField
+}
+
+type SearchCriteriaExactField struct {
+	Name  string
+	Value string
 }
 
 // SearchCriteriaTokenField has fields to use with "$in"
@@ -57,13 +65,26 @@ type SearchCriteriaRangeField struct {
 	Value float64
 }
 
+type SearchCriteriaDateRangeField struct {
+	Name  string
+	Key   string // gt/gte/lt/lte
+	Value time.Time
+}
+
 // SearchCriteriaSortField has fields to use with sort name : -1 or name : -1
 type SearchCriteriaSortField struct {
 	Name  string
 	Value int
 }
 
-func (c SearchCriteria) AddSearchRangeField(name string, key string, value float64) {
+func (c *SearchCriteria) AddSearchExactField(name string, value string) {
+	rangeField := SearchCriteriaExactField{}
+	rangeField.Name = name
+	rangeField.Value = value
+	c.ExactFields = append(c.ExactFields, rangeField)
+}
+
+func (c *SearchCriteria) AddSearchRangeField(name string, key string, value float64) {
 	rangeField := SearchCriteriaRangeField{}
 	rangeField.Name = name
 	rangeField.Key = key
@@ -71,18 +92,26 @@ func (c SearchCriteria) AddSearchRangeField(name string, key string, value float
 	c.RangeFields = append(c.RangeFields, rangeField)
 }
 
-func (c SearchCriteria) AddSearchTokenField(name string, values []string) {
+func (c *SearchCriteria) AddSearchDateRangeField(name string, key string, value time.Time) {
+	rangeField := SearchCriteriaDateRangeField{}
+	rangeField.Name = name
+	rangeField.Key = key
+	rangeField.Value = value
+	c.DateRangeFields = append(c.DateRangeFields, rangeField)
+}
+
+func (c *SearchCriteria) AddSearchTokenField(name string, values []string) {
 	tokenField := SearchCriteriaTokenField{}
 	tokenField.Name = name
 	tokenField.Values = values
 	c.TokenFields = append(c.TokenFields, tokenField)
 }
 
-func (c SearchCriteria) AddBooleanField(name string) {
+func (c *SearchCriteria) AddBooleanField(name string) {
 	c.BooleanFields = append(c.BooleanFields, name)
 }
 
-func (c SearchCriteria) AddSortField(name string, value int) {
+func (c *SearchCriteria) AddSortField(name string, value int) {
 	sortField := SearchCriteriaSortField{}
 	sortField.Name = name
 	sortField.Value = value
