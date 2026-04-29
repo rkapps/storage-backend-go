@@ -127,10 +127,12 @@ func (repo *MongoRepository[K, M]) Find(ctx context.Context, filter any, sort bs
 	opts := options.Find().SetSkip(skip).SetSort(sort).SetLimit(limit)
 	result, err := repo.coll.Find(ctx, filter, opts)
 	if err != nil {
+		slog.Error("Find", "Find Error", fmt.Sprintf("%v", err))
 		return models, err
 	}
 
 	if err := result.All(ctx, &models); err != nil {
+		slog.Error("Find", "result.All Error", fmt.Sprintf("%v", err))
 		return models, err
 	}
 	return models, nil
@@ -273,8 +275,13 @@ func (repo *MongoRepository[K, M]) Search(ctx context.Context, criteria core.Sea
 
 // UpdateOne update a single record into the collection based on the id.
 func (repo *MongoRepository[K, M]) UpdateOne(ctx context.Context, item M) error {
+	filter := bson.M{"id": item.Id()}
 	update := bson.M{"$set": item}
-	result, err := repo.coll.UpdateByID(ctx, item.Id(), update, nil)
+	result, err := repo.coll.UpdateOne(ctx, filter, update)
+	// 3. Check error FIRST to avoid nil pointer panic
+	if err != nil {
+		return err
+	}
 	if result.MatchedCount == 0 {
 		return fmt.Errorf("Could not find record with id: %v", item.Id())
 	}
