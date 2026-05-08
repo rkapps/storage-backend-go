@@ -8,7 +8,7 @@ import (
 // MongoDatabase wraps the mongo client
 type MongoDatabase struct {
 	client *mongo.Client
-	name   string
+	dbname string
 }
 
 // MongoRepository wraps the mongo collection

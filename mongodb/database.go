@@ -50,7 +50,11 @@ func GetBsonRegistryForDecimal() *bson.Registry {
 }
 
 func (db MongoDatabase) db() *mongo.Database {
-	return db.client.Database(db.name)
+	return db.client.Database(db.dbname)
+}
+
+func (db MongoDatabase) Name() string {
+	return db.dbname
 }
 
 // collection returns the mongo collection

@@ -3,7 +3,7 @@ package migrations
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"sort"
 	"strconv"
 	"time"
@@ -12,12 +12,12 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
-var migrationsm map[int]*Migration
+var migrationsm map[string]map[int]*Migration
 
 // Register registers migration versions
-func Register(version int, description string, up MigrateFunc, down MigrateFunc) {
+func Register(dbname string, version int, description string, up MigrateFunc, down MigrateFunc) {
 
-	if exists := migrationsm[version]; exists != nil {
+	if exists := migrationsm[dbname][version]; exists != nil {
 		panic(fmt.Sprintf("migration version '%d' already exists", version))
 	}
 	timestamp := time.Now()
@@ -25,15 +25,16 @@ func Register(version int, description string, up MigrateFunc, down MigrateFunc)
 	migration.ID = strconv.Itoa(migration.Version)
 
 	if migrationsm == nil {
-		migrationsm = make(map[int]*Migration)
+		migrationsm = make(map[string]map[int]*Migration)
+		migrationsm[dbname] = make(map[int]*Migration)
 	}
-	migrationsm[version] = migration
+	migrationsm[dbname][version] = migration
 }
 
 // RunMigrations runs all migrations
 func RunMigrations(database *mongodb.MongoDatabase) error {
 
-	migrations := getMigrations()
+	migrations := getMigrations(database.Name())
 	model := mongodb.GetMongoRepository[string, *Migration](database)
 	cmigrations, err := model.Find(context.Background(), bson.M{}, bson.D{{Key: "version", Value: -1}}, 0, 0)
 	if err != nil {
@@ -44,10 +45,10 @@ func RunMigrations(database *mongodb.MongoDatabase) error {
 		cversion = cmigrations[0].Version
 	}
 
-	log.Printf("Current Version: %d", cversion)
-
+	slog.Info(fmt.Sprintf("Migrations current Version: %d", cversion))
 	for _, migration := range migrations {
-		log.Printf("ID: %s Version: %d Description: %s", migration.ID, migration.Version, migration.Description)
+		// log.Printf("ID: %s Version: %d Description: %s", migration.ID, migration.Version, migration.Description)
+		slog.Info("Migration ID: "+migration.ID, "Version", migration.Version, "Description", migration.Description)
 		if migration.Version <= cversion {
 			continue
 		}
@@ -64,10 +65,10 @@ func RunMigrations(database *mongodb.MongoDatabase) error {
 	return nil
 }
 
-func getMigrations() []*Migration {
+func getMigrations(dbname string) []*Migration {
 
 	var migrations []*Migration
-	for _, migration := range migrationsm {
+	for _, migration := range migrationsm[dbname] {
 		migrations = append(migrations, migration)
 	}
 	sort.Slice(migrations, func(i int, j int) bool {

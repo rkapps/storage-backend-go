@@ -276,13 +276,14 @@ func (repo *MongoRepository[K, M]) Search(ctx context.Context, criteria core.Sea
 // UpdateOne update a single record into the collection based on the id.
 func (repo *MongoRepository[K, M]) UpdateOne(ctx context.Context, item M) error {
 	filter := bson.M{"id": item.Id()}
-	update := bson.M{"$set": item}
-	result, err := repo.coll.UpdateOne(ctx, filter, update)
-	// 3. Check error FIRST to avoid nil pointer panic
+	// update := bson.M{"$set": item}
+	opts := options.Replace().SetUpsert(true)
+
+	result, err := repo.coll.ReplaceOne(ctx, filter, item, opts)
 	if err != nil {
 		return err
 	}
-	if result.MatchedCount == 0 {
+	if result.MatchedCount == 0 && result.UpsertedCount == 0 {
 		return fmt.Errorf("Could not find record with id: %v", item.Id())
 	}
 	return err
