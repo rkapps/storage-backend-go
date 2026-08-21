@@ -3,6 +3,7 @@ package migrations
 import (
 	"context"
 	"fmt"
+	"log"
 	"log/slog"
 	"sort"
 	"strconv"
@@ -17,6 +18,7 @@ var migrationsm map[string]map[int]*Migration
 // Register registers migration versions
 func Register(dbname string, version int, description string, up MigrateFunc, down MigrateFunc) {
 
+	log.Printf("Reached register: %s", dbname)
 	if exists := migrationsm[dbname][version]; exists != nil {
 		panic(fmt.Sprintf("migration version '%d' already exists", version))
 	}
@@ -26,15 +28,20 @@ func Register(dbname string, version int, description string, up MigrateFunc, do
 
 	if migrationsm == nil {
 		migrationsm = make(map[string]map[int]*Migration)
+	}
+	if migrationsm[dbname] == nil {
 		migrationsm[dbname] = make(map[int]*Migration)
 	}
+
 	migrationsm[dbname][version] = migration
+	log.Println(migrationsm)
 }
 
 // RunMigrations runs all migrations
 func RunMigrations(database *mongodb.MongoDatabase) error {
 
 	migrations := getMigrations(database.Name())
+	log.Printf("migrations for %s: %d", database.Name(), len(migrations))
 	model := mongodb.GetMongoRepository[string, *Migration](database)
 	cmigrations, err := model.Find(context.Background(), bson.M{}, bson.D{{Key: "version", Value: -1}}, 0, 0)
 	if err != nil {
